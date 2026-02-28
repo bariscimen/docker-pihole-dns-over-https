@@ -1,42 +1,53 @@
 #!/bin/bash
 set -e
 
+PIHOLE_CONFIG="/etc/pihole/pihole.toml"
+
 # Handle shutdown
 cleanup() {
     echo "Shutting down services..."
-    kill -TERM $CLOUDFLARED_PID 2>/dev/null
+    kill -TERM $DNSCRYPT_PID 2>/dev/null
     kill -TERM $PIHOLE_PID 2>/dev/null
-    wait $CLOUDFLARED_PID 2>/dev/null
+    wait $DNSCRYPT_PID 2>/dev/null
     wait $PIHOLE_PID 2>/dev/null
     exit 0
 }
 trap cleanup SIGTERM SIGINT
 
 # Start services
-echo "Starting cloudflared..."
-/usr/local/bin/start-cloudflared.sh &
-CLOUDFLARED_PID=$!
+echo "Starting dnscrypt-proxy..."
+/usr/local/bin/start-dnscrypt-proxy.sh &
+DNSCRYPT_PID=$!
 
 echo "Starting Pi-hole..."
 /usr/bin/start.sh &
 PIHOLE_PID=$!
 
 # Wait for services to be ready
-sleep 2
+sleep 5
 
-# Verify cloudflared is working
+# Verify dnscrypt-proxy is working
 if ! dig @127.0.0.1 -p 5053 cloudflare.com > /dev/null; then
-    echo "Error: cloudflared DNS resolution test failed"
+    echo "Error: dnscrypt-proxy DNS resolution test failed"
     cleanup
     exit 1
+fi
+
+# Configure Pi-hole to use dnscrypt-proxy as its upstream DNS
+echo "Configuring Pi-hole to use dnscrypt-proxy as upstream DNS..."
+if [ -f "$PIHOLE_CONFIG" ]; then
+    sed -i 's/^  upstreams = \[.*\]/  upstreams = [\n    "127.0.0.1#5053"\n  ]/' "$PIHOLE_CONFIG"
+    # Signal Pi-hole to reload configuration
+    pihole-FTL --config dns.upstreams '["127.0.0.1#5053"]' 2>/dev/null || true
+    echo "Pi-hole upstream DNS set to 127.0.0.1#5053 (dnscrypt-proxy)"
 fi
 
 echo "Services started successfully"
 
 # Monitor processes
 while true; do
-    if ! kill -0 $CLOUDFLARED_PID 2>/dev/null; then
-        echo "Error: cloudflared exited unexpectedly"
+    if ! kill -0 $DNSCRYPT_PID 2>/dev/null; then
+        echo "Error: dnscrypt-proxy exited unexpectedly"
         cleanup
         exit 1
     fi
@@ -46,4 +57,4 @@ while true; do
         exit 1
     fi
     sleep 1
-done 
+done

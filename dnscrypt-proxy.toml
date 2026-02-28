@@ -1,0 +1,38 @@
+# dnscrypt-proxy configuration for Pi-hole DNS over HTTPS
+# This is a template — the entrypoint script will update server_names
+# and stamp values based on DOH_DNS1 and DOH_DNS2 environment variables.
+
+listen_addresses = ['127.0.0.1:5053']
+
+max_clients = 250
+ipv4_servers = true
+ipv6_servers = false
+dnscrypt_servers = false
+doh_servers = true
+require_dnssec = false
+require_nolog = false
+require_nofilter = true
+force_tcp = false
+
+timeout = 5000
+keepalive = 30
+
+log_level = 2
+use_syslog = false
+
+cert_refresh_delay = 240
+fallback_resolvers = ['1.1.1.1:53', '1.0.0.1:53']
+ignore_system_dns = true
+netprobe_timeout = 60
+netprobe_address = '1.1.1.1:53'
+
+cache = true
+cache_size = 4096
+cache_min_ttl = 2400
+cache_max_ttl = 86400
+cache_neg_min_ttl = 60
+cache_neg_max_ttl = 600
+
+# Static entries will be injected by start-dnscrypt-proxy.sh
+# based on DOH_DNS1 and DOH_DNS2 environment variables.
+[static]
