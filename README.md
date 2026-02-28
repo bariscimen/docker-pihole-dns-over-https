@@ -23,38 +23,38 @@ A Docker image that runs [Pi-hole](https://pi-hole.net) with built-in DNS over H
 ```yaml
 # More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
 services:
-    pihole:
-        container_name: pihole-dns-over-https
-        image: bariscimen/pihole-dns-over-https:latest
-        # For DHCP it is recommended to remove these ports and instead add: network_mode: "host"
-        ports:
-            - "53:53/tcp"
-            - "53:53/udp"
-            - "67:67/udp" # Only required if you are using Pi-hole as your DHCP server
-            - "80:80/tcp"
-        environment:
-            # Set the appropriate timezone for your location (https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), e.g:
-            TZ: 'Europe/London'
-            # Set a password to access the web interface. Not setting one will result in a random password being assigned
-            FTLCONF_webserver_api_password: 'correct horse battery staple'
-            # If using Docker's default `bridge` network setting the dns listening mode should be set to 'ALL'
-            FTLCONF_dns_listeningMode: 'ALL'
-            # DOH_DNS1: 'https://8.8.8.8/dns-query' # Uncomment to use Google DNS over HTTPS instead of Cloudflare
-            # DOH_DNS2: 'https://8.8.4.4/dns-query' # Uncomment to use Google DNS over HTTPS instead of Cloudflare
-        # Volumes store your data between container upgrades
-        volumes:
-            - './etc-pihole:/etc/pihole'
-            - './etc-dnsmasq.d:/etc/dnsmasq.d'
-        #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
-        cap_add:
-            # See https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
-            # Required if you are using Pi-hole as your DHCP server, else not needed
-            - NET_ADMIN
-            # Required if you are using Pi-hole as your NTP client to be able to set the host's system time
-            - SYS_TIME
-            # Optional, if Pi-hole should get some more processing time
-            - SYS_NICE
-        restart: unless-stopped
+  pihole:
+    container_name: pihole-dns-over-https
+    image: bariscimen/pihole-dns-over-https:latest
+    # For DHCP it is recommended to remove these ports and instead add: network_mode: "host"
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "67:67/udp" # Only required if you are using Pi-hole as your DHCP server
+      - "80:80/tcp"
+    environment:
+      # Set the appropriate timezone for your location (https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), e.g:
+      TZ: 'Europe/London'
+      # Set a password to access the web interface. CHANGE THIS! Not setting one will result in a random password being assigned
+      FTLCONF_webserver_api_password: 'correct horse battery staple'  # <-- CHANGE THIS
+      # If using Docker's default `bridge` network setting the dns listening mode should be set to 'ALL'
+      FTLCONF_dns_listeningMode: 'ALL'
+      # DOH_DNS1: 'https://8.8.8.8/dns-query' # Uncomment to use Google DNS over HTTPS instead of Cloudflare
+      # DOH_DNS2: 'https://8.8.4.4/dns-query' # Uncomment to use Google DNS over HTTPS instead of Cloudflare
+    # Volumes store your data between container upgrades
+    volumes:
+      - './etc-pihole:/etc/pihole'
+      - './etc-dnsmasq.d:/etc/dnsmasq.d'
+    #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+    cap_add:
+      # See https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+      # Required if you are using Pi-hole as your DHCP server, else not needed
+      - NET_ADMIN
+      # Required if you are using Pi-hole as your NTP client to be able to set the host's system time
+      - SYS_TIME
+      # Optional, if Pi-hole should get some more processing time
+      - SYS_NICE
+    restart: unless-stopped
 ```
 
 2. Run `docker compose up -d`

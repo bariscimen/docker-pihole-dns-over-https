@@ -13,6 +13,10 @@ generate_stamp() {
     # Parse URL components
     host=$(echo "$url" | sed -E 's|https?://([^/:]+).*|\1|')
     path=$(echo "$url" | sed -E 's|https?://[^/]+(/.+)|\1|')
+    # If URL has no explicit path, sed won't match and returns the full URL — default to /dns-query
+    case "$path" in
+        https://*) path="/dns-query" ;;
+    esac
 
     # Use IP address directly if host is an IP, otherwise leave addr empty
     if echo "$host" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
@@ -40,6 +44,13 @@ generate_stamp() {
         printf '%s' "$path"
     } | base64 | tr -d '\n' | tr '+/' '-_' | sed 's/=*$//'
 }
+
+# Default to Cloudflare if neither DOH_DNS var is set
+if [ -z "$DOH_DNS1" ] && [ -z "$DOH_DNS2" ]; then
+    echo "No DOH_DNS1/DOH_DNS2 set — defaulting to Cloudflare DoH servers"
+    DOH_DNS1="https://1.1.1.1/dns-query"
+    DOH_DNS2="https://1.0.0.1/dns-query"
+fi
 
 echo "Configuring dnscrypt-proxy with DoH servers..."
 echo "  DOH_DNS1: ${DOH_DNS1:-not set}"
@@ -75,9 +86,16 @@ fi
 sed -i '/^server_names/d' "$CONFIG_FILE"
 sed -i '/^\[static\]/,$d' "$CONFIG_FILE"
 
-# Add server_names after listen_addresses
+# Add server_names after listen_addresses (portable — avoids BusyBox sed 'a' quirks)
 if [ -n "$SERVER_NAMES" ]; then
-    sed -i "/^listen_addresses/a server_names = [${SERVER_NAMES}]" "$CONFIG_FILE"
+    tmp=$(mktemp)
+    while IFS= read -r line; do
+        printf '%s\n' "$line"
+        case "$line" in
+            listen_addresses*) printf '%s\n' "server_names = [${SERVER_NAMES}]" ;;
+        esac
+    done < "$CONFIG_FILE" > "$tmp"
+    mv "$tmp" "$CONFIG_FILE"
 fi
 
 # Append static block

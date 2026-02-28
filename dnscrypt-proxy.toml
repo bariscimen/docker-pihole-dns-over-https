@@ -28,7 +28,8 @@ netprobe_address = '1.1.1.1:53'
 
 cache = true
 cache_size = 4096
-cache_min_ttl = 2400
+# Keep min TTL low since Pi-hole also caches — avoids compounding stale results
+cache_min_ttl = 60
 cache_max_ttl = 86400
 cache_neg_min_ttl = 60
 cache_neg_max_ttl = 600
